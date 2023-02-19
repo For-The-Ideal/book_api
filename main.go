@@ -1,17 +1,15 @@
 package main
 
 import (
-	"net/http"
+	"yigouwang_api/common"
+	"yigouwang_api/routers"
 
 	"github.com/gin-gonic/gin"
 )
 
 func main() {
+	common.InitDB()
 	r := gin.Default()
-	r.GET("/index", func(c *gin.Context) {
-		c.JSON(http.StatusOK, gin.H{
-			"messge": "hello world",
-		})
-	})
-	r.Run()
+	r = routers.CollRouter(r)
+	r.Run(":9999")
 }
