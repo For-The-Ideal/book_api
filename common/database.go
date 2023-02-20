@@ -6,6 +6,7 @@ import (
 
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
+	"gorm.io/gorm/schema"
 )
 
 var DB *gorm.DB
@@ -19,7 +20,11 @@ func InitDB() *gorm.DB {
 	charset := "utf8"
 	local := "Local"
 	args := fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?charset=%s&parseTime=true&loc=%s", username, password, host, port, database, charset, local)
-	db, err := gorm.Open(mysql.Open(args), &gorm.Config{})
+	db, err := gorm.Open(mysql.Open(args), &gorm.Config{
+		NamingStrategy: schema.NamingStrategy{
+			SingularTable: true,
+		},
+	})
 	sqlDb, _ := db.DB()
 	if err != nil {
 		panic("open mysql failed," + err.Error())
