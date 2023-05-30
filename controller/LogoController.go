@@ -1,50 +1,79 @@
 package controller
 
 import (
+	"chatGpt_api/common"
+	"fmt"
+	"log"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
 )
 
-type MenuList struct {
-	MenuList []MenuItem `json:"menuList"`
-}
-
-type MenuItem struct {
-	Title    string    `json:"title"`
-	Icon     string    `json:"icon"`
-	FatherId int       `json:"fatherId"`
-	SonList  []SonList `json:"sonList"`
-}
-
-type SonList struct {
-	SonTitle  string `json:"sonTitle"`
-	SonIcon   string `json:"sonIcon"`
-	FatherId  int    `json:"fatherId"`
-	SonId     int    `json:"sonId"`
-	SonRouter string `json:"sonRouter"`
+// 定义user类型结构体
+type User struct {
+	id         int    `json:"id"`
+	Account    string `json:"account"`
+	Password   string `json:"password"`
+	Head_photo string `json:"head_photo"`
 }
 
 func Login(ctx *gin.Context) {
-	var menuListInfo MenuList
-	var sonList []SonList
-	menuListInfo.MenuList = append(menuListInfo.MenuList, MenuItem{Title: "资源总揽", Icon: "md-desktop", FatherId: 1, SonList: sonList})
-	sonList = append(sonList, SonList{SonTitle: "首页", SonId: 0, SonIcon: "ios-paper", FatherId: 1, SonRouter: "/home"})
+	account := ctx.PostForm("account")
+	password := ctx.PostForm("password")
 
-	menuListInfo.MenuList = append(menuListInfo.MenuList, MenuItem{Title: "业务系统管理", Icon: "ios-keypad", FatherId: 2, SonList: sonList})
-	sonList = append(sonList, SonList{SonTitle: "业务清单", SonId: 0, SonIcon: "md-list-box", FatherId: 2, SonRouter: "/articleList"})
-
-	menuListInfo.MenuList = append(menuListInfo.MenuList, MenuItem{Title: "云主机管理", Icon: "md-phone-landscape", FatherId: 3, SonList: sonList})
-	sonList = append(sonList, SonList{SonTitle: "网络部", SonId: 0, SonIcon: "md-list-box", FatherId: 3, SonRouter: "/videoList"})
-	sonList = append(sonList, SonList{SonTitle: "信技部", SonId: 1, SonIcon: "md-list-box", FatherId: 3, SonRouter: ""})
-	sonList = append(sonList, SonList{SonTitle: "采购部", SonId: 2, SonIcon: "md-list-box", FatherId: 3, SonRouter: ""})
-	sonList = append(sonList, SonList{SonTitle: "办公室", SonId: 3, SonIcon: "md-list-box", FatherId: 3, SonRouter: ""})
-	sonList = append(sonList, SonList{SonTitle: "其它部门", SonId: 4, SonIcon: "md-list-box", FatherId: 3, SonRouter: ""})
-
-	// fmt.Println(menuListInfo, "menuListInfo")
+	fmt.Println(account, "account")
+	fmt.Println(password, "password")
+	userInfo, err := QueryUserByCode(account, password)
+	if !err {
+		ctx.JSON(http.StatusOK, gin.H{
+			"status": http.StatusAccepted,
+			"data":   gin.H{},
+			"msg":    "账号密码不存在",
+		})
+		return
+	}
 	ctx.JSON(http.StatusOK, gin.H{
-		"msg":  "登录成功",
-		"code": http.StatusOK,
-		"data": menuListInfo,
+		"status": http.StatusOK,
+		"data":   userInfo,
+		"msg":    "success",
 	})
+
+}
+
+func QueryUserByCode(account string, password string) (*User, bool) {
+	u := &User{}             // 定义User切片
+	db := common.ConnMySQL() // 调用db包ConnMySQL()
+	// 预编译查询sql创建 statement
+	stmt, err := db.Prepare("SELECT account, password FROM `user` WHERE account = ? && password = ? && id > 0")
+	if err != nil {
+		log.Fatal(err)
+		panic(err)
+	}
+	defer stmt.Close()
+	// 执行查询sql，返回查询结果rows
+	rows, err := stmt.Query(account, password)
+	if err != nil {
+		// 打印错误信息
+		log.Fatal(err)
+		// 抛出错误信息，阻止程序继续运行
+		return u, false
+	}
+	fmt.Print(rows, "rows")
+	// 遍历rows
+	for rows.Next() {
+		fmt.Println(u, "u")
+		// 扫描rows的每一列并保存数据到User对应字段
+		err := rows.Scan(&u.Account, &u.Password)
+		// &u.id,
+		// , &u.Password
+		if err != nil {
+			// 打印错误信息
+			log.Fatal(err)
+			// 抛出错误信息，阻止程序继续运行
+			panic(err)
+		}
+		// 扫描后的user加入到切片
+		// s = append(s, u)
+	}
+	return u, true
 }

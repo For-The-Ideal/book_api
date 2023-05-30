@@ -7,7 +7,6 @@ import (
 )
 
 func VerificationCode(ctx *gin.Context) {
-
 	ctx.JSON(http.StatusOK, gin.H{
 		"msg":  "注册成功",
 		"code": http.StatusOK,

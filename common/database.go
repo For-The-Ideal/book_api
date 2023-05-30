@@ -1,45 +1,47 @@
 package common
 
 import (
+	"database/sql"
 	"fmt"
 	"time"
 
-	"gorm.io/driver/mysql"
-	"gorm.io/gorm"
-	"gorm.io/gorm/schema"
+	//注册驱动器 _下划线表示执行驱动中的init函数，不使用其他函数
+	_ "github.com/go-sql-driver/mysql"
 )
 
-var DB *gorm.DB
-
-func InitDB() *gorm.DB {
-	host := "localhost"
-	port := "3306"
-	database := "test"
-	username := "root"
-	password := "123456"
-	charset := "utf8"
-	local := "Local"
-	args := fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?charset=%s&parseTime=true&loc=%s", username, password, host, port, database, charset, local)
-	db, err := gorm.Open(mysql.Open(args), &gorm.Config{
-		NamingStrategy: schema.NamingStrategy{
-			SingularTable: true,
-		},
-	})
-	sqlDb, _ := db.DB()
+// 创建数据库连接
+func ConnMySQL() *sql.DB {
+	// 数据源名
+	driverName := "mysql"
+	root := "root"
+	passworld := "123456"
+	local := "localhost"
+	prod := "3306"
+	dbName := "chat-web"
+	// 用户名root
+	// 密码1234
+	// tcp协议连接
+	// 数据库地址
+	// 数据库 wms
+	dataSourceName := root + ":" + passworld + "@" + "tcp" + "(" + local + ":" + prod + ")" + "/" + dbName
+	fmt.Println(dataSourceName, "dataSourceName")
+	db, err := sql.Open(driverName, dataSourceName)
 	if err != nil {
-		panic("open mysql failed," + err.Error())
+		panic(err)
 	}
-	pingErr := sqlDb.Ping()
-	if pingErr != nil {
-		panic("mysql link error," + err.Error())
-	}
-	sqlDb.SetMaxOpenConns(5)
-	sqlDb.SetMaxIdleConns(2)
-	sqlDb.SetConnMaxIdleTime(time.Minute)
-	DB = db
-	return db
-}
 
-func GetDB() *gorm.DB {
-	return DB
+	// 数据库设置
+	db.SetConnMaxLifetime(time.Minute * 10)
+	db.SetConnMaxIdleTime(time.Minute * 10)
+	db.SetMaxOpenConns(10)
+	db.SetMaxIdleConns(10)
+
+	// 连接测试
+	err = db.Ping()
+	if err != nil {
+		fmt.Println("数据库连接失败")
+		panic(err)
+	}
+	fmt.Println("数据库连接成功")
+	return db
 }
